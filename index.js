@@ -6,7 +6,14 @@ import QRCode from 'qrcode';
 import multer from 'multer';
 
 const app = express();
-app.use(cors({ origin: '*' }));
+
+// ✅ UPDATED CORS CONFIGURATION
+app.use(cors({ 
+  origin: process.env.FRONTEND_URL || '*',
+  methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
+  credentials: true
+}));
+
 app.use(express.json());
 
 const upload = multer({ storage: multer.memoryStorage() });
@@ -115,7 +122,7 @@ app.get('/api/student/:id', async (req, res) => {
 });
 
 // ------------------------------
-// ✅ ATTENDANCE (FIXED LOGIC)
+// Attendance
 app.post('/api/attendance', async (req, res) => {
   try {
     const { student_id, lecturer, course, admin_pin } = req.body;
@@ -128,14 +135,12 @@ app.post('/api/attendance', async (req, res) => {
       return res.status(403).json({ ok: false, error: 'Invalid admin PIN' });
     }
 
-    // Today range
     const startOfDay = new Date();
     startOfDay.setHours(0, 0, 0, 0);
 
     const endOfDay = new Date();
     endOfDay.setHours(23, 59, 59, 999);
 
-    // 🔍 CHECK: same student + same course + same lecturer + same day
     const { data: existing, error: checkErr } = await supabase
       .from('attendance')
       .select('id')
@@ -157,7 +162,6 @@ app.post('/api/attendance', async (req, res) => {
       });
     }
 
-    // ✅ INSERT attendance
     const { data, error } = await supabase
       .from('attendance')
       .insert([{ student_id, lecturer, course }])
