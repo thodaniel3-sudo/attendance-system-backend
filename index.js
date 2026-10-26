@@ -78,7 +78,7 @@ app.post('/api/student', upload.single('photo'), async (req, res) => {
       photo_url = await getFileUrl(PHOTO_BUCKET, photoPath);
     }
 
-    const scanUrl = `${FRONTEND_URL}/scan?id=${student.id}`;
+   const scanUrl = `${FRONTEND_URL}/scanner.html?id=${student.id}`;
     const qrBuffer = await QRCode.toBuffer(scanUrl);
 
     const qrPath = `qr_${student.id}.png`;
