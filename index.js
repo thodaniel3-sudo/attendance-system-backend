@@ -78,7 +78,7 @@ app.post('/api/student', upload.single('photo'), async (req, res) => {
       photo_url = await getFileUrl(PHOTO_BUCKET, photoPath);
     }
 
-   const scanUrl = `${FRONTEND_URL}/scanner.html?id=${student.id}`;
+    const scanUrl = `${FRONTEND_URL}/scanners.html?id=${student.id}`;
     const qrBuffer = await QRCode.toBuffer(scanUrl);
 
     const qrPath = `qr_${student.id}.png`;
@@ -176,6 +176,46 @@ app.post('/api/attendance', async (req, res) => {
 
   } catch (err) {
     console.error(err);
+    res.status(500).json({ ok: false, error: 'Server error' });
+  }
+});
+
+// ------------------------------
+// ADMIN ROUTES (NEW)
+// ------------------------------
+
+// 1. Admin Login Verification
+app.post('/api/admin/login', (req, res) => {
+  const { email, admin_pin } = req.body;
+  
+  // If ADMIN_EMAIL is not set in Render, we just check the PIN.
+  const validEmail = process.env.ADMIN_EMAIL ? process.env.ADMIN_EMAIL : null;
+  
+  if ((validEmail && email !== validEmail) || admin_pin !== ADMIN_PIN) {
+    return res.status(403).json({ ok: false, error: 'Invalid Email or PIN' });
+  }
+  
+  res.json({ ok: true });
+});
+
+// 2. Get all attendance records for the Dashboard
+app.post('/api/admin/attendance', async (req, res) => {
+  try {
+    const { admin_pin } = req.body;
+    
+    if (admin_pin !== ADMIN_PIN) {
+      return res.status(403).json({ ok: false, error: 'Unauthorized' });
+    }
+
+    const { data, error } = await supabase
+      .from('attendance')
+      .select('*')
+      .order('created_at', { ascending: false });
+
+    if (error) return res.status(500).json({ ok: false, error: error.message });
+
+    res.json({ ok: true, attendance: data });
+  } catch (err) {
     res.status(500).json({ ok: false, error: 'Server error' });
   }
 });
